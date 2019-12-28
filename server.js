@@ -14,6 +14,10 @@ const PORT = process.env.PORT;
 const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const DARKSKY_API_KEY = process.env.DARKSKY_API_KEY;
 const EVENTFUL_API_KEY = process.env.EVENTFUL_API_KEY;
+const MOVIE_API_KEY = process.env.MOVIE_API_KEY;
+const YELP_API_KEY = process.env.YELP_API_KEY;
+
+
 
 
 server.get('/', (request, response) => {
@@ -24,6 +28,9 @@ server.get('/', (request, response) => {
 server.get('/location', locationRndering);
 server.get('/weather', weatherrenderring);
 server.get('/events', eventfulRndering);
+server.get('/movies', moviesRndering);
+server.get('/yelp', yelpRndering);
+
 
 
 function Location(locationData) {
@@ -127,11 +134,106 @@ function getEventfulData(city) {
             return eventful;
         });
 }
+// //////////////////////////////////
+// [
+//     {
+//       "title": "Sleepless in Seattle",
+//       "overview": "A young boy who tries to set his dad up on a date after the death of his mother. He calls into a radio station to talk about his dad’s loneliness which soon leads the dad into meeting a Journalist Annie who flies to Seattle to write a story about the boy and his dad. Yet Annie ends up with more than just a story in this popular romantic comedy.",
+//       "average_votes": "6.60",
+//       "total_votes": "881",
+//       "image_url": "https://image.tmdb.org/t/p/w500/afkYP15OeUOD0tFEmj6VvejuOcz.jpg",
+//       "popularity": "8.2340",
+//       "released_on": "1993-06-24"
+//     },
+//     {
+//       "title": "Love Happens",
+//       "overview": "Dr. Burke Ryan is a successful self-help author and motivational speaker with a secret. While he helps thousands of people cope with tragedy and personal loss, he secretly is unable to overcome the death of his late wife. It's not until Burke meets a fiercely independent florist named Eloise that he is forced to face his past and overcome his demons.",
+//       "average_votes": "5.80",
+//       "total_votes": "282",
+//       "image_url": "https://image.tmdb.org/t/p/w500/pN51u0l8oSEsxAYiHUzzbMrMXH7.jpg",
+//       "popularity": "15.7500",
+//       "released_on": "2009-09-18"
+//     },
+//     ...
+//   ]
+function Movies(data){
+    this.title = data[0].title;
+    this.overview = data[0].overview;
+    this.average_votes = data[0].vote_average;
+    this.total_votes = data[0].vote_count;
+    this.image_url = data[0].poster_path;
+    this.popularity = data[0].popularity;
+    this.released_on = data[0].release_date;
+}
+function moviesRndering(request, response){
+    let city = request.query.formatted_query;
+    getMoviesData(city)
+        .then((data) => {
+            response.status(200).send(data);
+        });
+    }
+    function getMoviesData(city) {
+        const moviesUrl = `https://api.themoviedb.org/3/search/movie?api_key=${MOVIE_API_KEY}&query=${city}&total_results=20`;
+        console.log(moviesUrl)
+        return superagent.get(moviesUrl)
+            .then((moviesData) => {
+                // let jsonData = JSON.parse(moviesData.text);
+                // console.log(moviesData.body.results);
+                const movies = moviesData.body.results.map((data) => new Movies(data));   
+                return movies;
+            });
+            }   
+
+            // //////////////////////////////////
+            // [
+            //     {
+            //       "name": "Pike Place Chowder",
+            //       "image_url": "https://s3-media3.fl.yelpcdn.com/bphoto/ijju-wYoRAxWjHPTCxyQGQ/o.jpg",
+            //       "price": "$$   ",
+            //       "rating": "4.5",
+            //       "url": "https://www.yelp.com/biz/pike-place-chowder-seattle?adjust_creative=uK0rfzqjBmWNj6-d3ujNVA&utm_campaign=yelp_api_v3&utm_medium=api_v3_business_search&utm_source=uK0rfzqjBmWNj6-d3ujNVA"
+            //     },
+            //     {
+            //       "name": "Umi Sake House",
+            //       "image_url": "https://s3-media3.fl.yelpcdn.com/bphoto/c-XwgpadB530bjPUAL7oFw/o.jpg",
+            //       "price": "$$   ",
+            //       "rating": "4.0",
+            //       "url": "https://www.yelp.com/biz/umi-sake-house-seattle?adjust_creative=uK0rfzqjBmWNj6-d3ujNVA&utm_campaign=yelp_api_v3&utm_medium=api_v3_business_search&utm_source=uK0rfzqjBmWNj6-d3ujNVA"
+            //     },
+            //     ...
+            //   ]
+         function Yelp(data){
+             this.name = data.name;
+             this.image_url = data.image_url;
+             this.price =data.price;
+             this.rating = data.rating;
+             this.url = data.url;
+         }
+         function yelpRndering(request, response){
+            let city = request.query.formatted_query;
+            getYelpData(city)
+                .then((data) => {
+                    response.status(200).send(data);
+                });
+         }
+         function getYelpData(city) {
+            const yelpUrl = `https://api.yelp.com/v3/businesses/search?accessToken=${YELP_API_KEY}&term=food`;
+            // console.log(yelpUrl)
+            return superagent.get(yelpUrl)
+                .then((yelpData) => {
+                    // let jsonData = JSON.parse(moviesData.text);
+                    console.log(yelpData);
+                    const yelp = yelpData.map((data) => new Yelp(data));   
+                    return yelp;
+                });
+                } 
+
+
+            // //////////////////////////////////
 
 server.use('*', (request, response) => {
     response.status(404).send('its not found ')
 });
-// //////////////////////////////////
 server.use((error, request, response) => {
     response.status(500).send("Sorry, something went wrong");
 });
